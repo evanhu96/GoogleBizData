@@ -10,16 +10,22 @@
   <body>
     <h1>4 U Dev</h1>
 
+    <div>
+      <label for="current-length">Current length:</label>
+      <span id="current-length">0</span>'
+    </div>
     <!-- input api key -->
     <label for="keyword-input">Enter Keyword:</label>
     <input type="text" id="keyword-input" placeholder="Type keyword" />
-
     <button onclick="fetchNearbyPlaces()">Fetch Places</button>
     <ul id="places-list"></ul>
 
-    <button id="download">Download as Excel</button>
 
     <script>
+      // Global array to store all places
+      let allPlaces = [];
+      let allDetailedResults = [];
+
       function fetchNearbyPlaces() {
         // Get the user-entered keyword
         const keywordInput = document.getElementById("keyword-input");
@@ -29,25 +35,83 @@
           document.createElement("div")
         );
 
-        // Define the request parameters
-        const request = {
+        // Define the initial request parameters
+        const initialRequest = {
           location: { lat: 41, lng: -75.642221 },
           radius: 60000,
           keyword: keyword,
         };
 
-        // Make the Places API request
-        placesService.nearbySearch(request, (results, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK) {
-            console.log("Places fetched:", results);
-            // Process the places data as needed
-            displayPlaces(results);
-          } else {
-            console.error("Error fetching places:", status);
+        // Make the initial Places API request
+        placesService.nearbySearch(
+          initialRequest,
+          (results, status, pagination) => {
+            handleResults(results, status, pagination, placesService);
           }
-        });
+        );
       }
 
+      function handleResults(results, status, pagination, placesService) {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+          console.log("Places fetched:", results);
+
+          // Accumulate results in the global array
+          allPlaces = allPlaces.concat(results);
+          // Display the current length on the page
+          document.getElementById("current-length").textContent =
+            allPlaces.length;
+          // If there are more results, fetch the next page
+          if (pagination.hasNextPage) {
+            pagination.nextPage();
+          } else {
+            // If no more pages, process all places
+            processAllPlaces(placesService);
+          }
+        } else {
+          console.error("Error fetching places:", status);
+        }
+      }
+
+      function processAllPlaces(placesService) {
+        console.log("All places accumulated:", allPlaces);
+
+        // Fetch detailed information for each place
+        const promises = allPlaces.map((place) =>
+          getPlaceDetails(placesService, place.place_id)
+        );
+
+        // Wait for all promises to resolve
+        Promise.all(promises)
+          .then((detailedResults) => {
+            console.log("Detailed information for places:", detailedResults);
+            // Process the detailed information as needed
+            displayPlaces(detailedResults);
+            downloadExcel(detailedResults);
+          })
+          .catch((error) =>
+            console.error("Error fetching place details:", error)
+          );
+      }
+
+      // Function to get detailed information for a place
+      function getPlaceDetails(placesService, placeId) {
+        return new Promise((resolve, reject) => {
+          // Define the request parameters for detailed information
+          const request = {
+            placeId: placeId,
+            fields: ["name", "formatted_address", "formatted_phone_number"],
+          };
+
+          // Make the getDetails API request
+          placesService.getDetails(request, (place, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+              resolve(place);
+            } else {
+              reject(status);
+            }
+          });
+        });
+      }
       function displayPlaces(places) {
         // Display the list of places
         const placesList = document.getElementById("places-list");
@@ -60,14 +124,11 @@
         });
 
         //use the download button to download the excel file
-        const downloadButton = document.getElementById("download");
-        downloadButton.textContent = "Download as Excel";
-        downloadButton.addEventListener("click", () => downloadExcel(places));
-        document.body.appendChild(downloadButton);
       }
 
       function downloadExcel(places) {
         var ws = XLSX.utils.json_to_sheet(places);
+        ws['!cols'] = [{ wch: 30 }]; // Set the w
         var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
 
@@ -100,8 +161,6 @@
       }
 
       // Fetch places when the page loads
-      fetchNearbyPlaces();
     </script>
-
   </body>
 </html>
