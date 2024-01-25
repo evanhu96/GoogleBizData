@@ -11,9 +11,15 @@ async function getBusinessesByLocation(
 ) {
   try {
     const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&keyword=${keyword}&key=${apiKey}`
+      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&keyword=${keyword}&key=AIzaSyAoelhCI15hmUPmRC985MKFhaeNc_cJ-Pc`,
+      {
+        mode: "no-cors",
+      }
     );
-
+    consolelog(response);
+    const data = await response.json();
+    // Process the data as needed
+    console.log(data);
     if (response.data.status === "OK") {
       return response.data.results;
     } else {

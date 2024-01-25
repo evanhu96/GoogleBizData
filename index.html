@@ -3,14 +3,105 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Excel Download Example</title>
+    <title>Google Maps JavaScript API Example</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAoelhCI15hmUPmRC985MKFhaeNc_cJ-Pc&libraries=places"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
   </head>
   <body>
-    <input type="text" id="apiKey" placeholder="Input API key" />
-    <button id="downloadBtn">Download Excel</button>
-    <input type="text" id="keyword" placeholder="KeyWord" />
-    <button id="searchBtn">Search</button>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
-    <script src="index.js"></script>
+    <h1>4 U Dev</h1>
+
+    <!-- input api key -->
+    <label for="keyword-input">Enter Keyword:</label>
+    <input type="text" id="keyword-input" placeholder="Type keyword" />
+
+    <button onclick="fetchNearbyPlaces()">Fetch Places</button>
+    <ul id="places-list"></ul>
+
+    <button id="download">Download as Excel</button>
+
+    <script>
+      function fetchNearbyPlaces() {
+        // Get the user-entered keyword
+        const keywordInput = document.getElementById("keyword-input");
+        const keyword = keywordInput.value;
+        // Set up the Places service
+        const placesService = new google.maps.places.PlacesService(
+          document.createElement("div")
+        );
+
+        // Define the request parameters
+        const request = {
+          location: { lat: 41, lng: -75.642221 },
+          radius: 60000,
+          keyword: keyword,
+        };
+
+        // Make the Places API request
+        placesService.nearbySearch(request, (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            console.log("Places fetched:", results);
+            // Process the places data as needed
+            displayPlaces(results);
+          } else {
+            console.error("Error fetching places:", status);
+          }
+        });
+      }
+
+      function displayPlaces(places) {
+        // Display the list of places
+        const placesList = document.getElementById("places-list");
+        placesList.innerHTML = ""; // Clear previous results
+
+        places.forEach((place) => {
+          const listItem = document.createElement("li");
+          listItem.textContent = place.name;
+          placesList.appendChild(listItem);
+        });
+
+        //use the download button to download the excel file
+        const downloadButton = document.getElementById("download");
+        downloadButton.textContent = "Download as Excel";
+        downloadButton.addEventListener("click", () => downloadExcel(places));
+        document.body.appendChild(downloadButton);
+      }
+
+      function downloadExcel(places) {
+        var ws = XLSX.utils.json_to_sheet(places);
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+        // Generate string content
+        var excelString = XLSX.write(wb, { bookType: "xlsx", type: "binary" });
+
+        // Convert string to blob
+        var excelBlob = new Blob([s2ab(excelString)], {
+          type: "application/octet-stream",
+        });
+
+        // Helper function to convert string to array buffer
+        function s2ab(s) {
+          var buf = new ArrayBuffer(s.length);
+          var view = new Uint8Array(buf);
+          for (var i = 0; i !== s.length; ++i) view[i] = s.charCodeAt(i) & 0xff;
+          return buf;
+        }
+
+        // Add event listener for download button
+
+        var downloadLink = document.createElement("a");
+        downloadLink.href = URL.createObjectURL(excelBlob);
+        downloadLink.download = "sample_excel_file.xlsx";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        // Create a download link and trigger the download
+      }
+
+      // Fetch places when the page loads
+      fetchNearbyPlaces();
+    </script>
+
   </body>
 </html>
