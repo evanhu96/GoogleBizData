@@ -20,7 +20,6 @@
     <button onclick="fetchNearbyPlaces()">Fetch Places</button>
     <ul id="places-list"></ul>
 
-
     <script>
       // Global array to store all places
       let allPlaces = [];
@@ -99,7 +98,16 @@
           // Define the request parameters for detailed information
           const request = {
             placeId: placeId,
-            fields: ["name", "formatted_address", "formatted_phone_number"],
+            fields: [
+              "name",
+              "formatted_address",
+              "formatted_phone_number",
+              "geometry.location",
+              "place_id",
+              "types",
+              "rating",
+              "opening_hours",
+            ],
           };
 
           // Make the getDetails API request
@@ -128,7 +136,7 @@
 
       function downloadExcel(places) {
         var ws = XLSX.utils.json_to_sheet(places);
-        ws['!cols'] = [{ wch: 30 }]; // Set the w
+        ws["!cols"] = [{ wch: 30 }]; // Set the w
         var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
 
